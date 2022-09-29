@@ -22,6 +22,7 @@ let package = Package(
         .testTarget(
             name: "SwiftSyntaxSearchTests",
             dependencies: [
+                .product(name: "SwiftSyntaxParser", package: "swift-syntax"),
                 "SwiftSyntaxSearch",
             ]
         ),

@@ -5,4 +5,7 @@
             "path": ".",
         },
     ],
+    "settings": {
+        "sourcekit-lsp.trace.server": "messages",
+    }
 }

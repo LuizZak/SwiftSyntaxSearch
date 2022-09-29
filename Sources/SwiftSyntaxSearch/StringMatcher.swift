@@ -1,5 +1,5 @@
 /// Matches strings, either partially, fully or by prefix-/suffix-
-enum StringMatcher: Equatable, CustomStringConvertible {
+public enum StringMatcher: Equatable, CustomStringConvertible {
     /// Matches `term` exactly.
     case exact(String)
 
@@ -12,7 +12,7 @@ enum StringMatcher: Equatable, CustomStringConvertible {
     /// Matches `*term`, case sensitive.
     case suffix(String)
 
-    func matches(_ str: String) -> Bool {
+    public func matches(_ str: String) -> Bool {
         switch self {
         case .exact(let exp):
             return str == exp
@@ -28,7 +28,7 @@ enum StringMatcher: Equatable, CustomStringConvertible {
         }
     }
 
-    var description: String {
+    public var description: String {
         switch self {
         case .exact(let exp):
             return exp
@@ -46,7 +46,7 @@ enum StringMatcher: Equatable, CustomStringConvertible {
 }
 
 extension StringMatcher: ExpressibleByStringLiteral {
-    init(stringLiteral value: String) {
+    public init(stringLiteral value: String) {
         self = .exact(value)
     }
 }
