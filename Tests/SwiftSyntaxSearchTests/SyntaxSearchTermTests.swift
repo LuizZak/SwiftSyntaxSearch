@@ -19,8 +19,7 @@ class SyntaxSearchTermTests: XCTestCase {
             .anyChildRecursive(
                 IntegerLiteralExprSyntax
                     .search
-                    .init()
-                    .add(\.digits, "0")
+                    .and(\.digits, "0")
             )
 
         XCTAssertTrue(sut.matches(file))

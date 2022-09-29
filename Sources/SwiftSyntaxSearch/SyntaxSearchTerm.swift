@@ -1,5 +1,7 @@
 import SwiftSyntax
 
+/// Struct that can be used to perform searches and pattern-matching across complex
+/// SwiftSyntax `SyntaxProtocol` trees.
 public struct SyntaxSearchTerm<T: SyntaxProtocol> {
     fileprivate var _conditions: [WrappedCondition] = []
     
@@ -9,6 +11,10 @@ public struct SyntaxSearchTerm<T: SyntaxProtocol> {
         ])
     }
 
+    /// Initializes an empty matcher.
+    ///
+    /// Empty matchers match true for any value that is passed in, as long as
+    /// their type matches `T`.
     public init() {
         self.init(_conditions: [])
     }
@@ -17,6 +23,8 @@ public struct SyntaxSearchTerm<T: SyntaxProtocol> {
         self._conditions = _conditions
     }
 
+    /// Returns whether a given syntax protocol type is of type `T`, and all
+    /// conditions associated with this search term are fulfilled.
     public func matches(_ syntax: SyntaxProtocol?) -> Bool {
         guard let syntax = syntax?.asSyntax.as(T.self) else {
             return false
@@ -25,7 +33,8 @@ public struct SyntaxSearchTerm<T: SyntaxProtocol> {
         return _conditions.allSatisfy { $0.matches(syntax) }
     }
 
-    public func add(_ keyPath: KeyPath<T, TokenSyntax?>, _ matcher: StringMatcher) -> Self {
+    /// Returns a copy of this search term with a new `and` condition added.
+    public func and(_ keyPath: KeyPath<T, TokenSyntax?>, _ matcher: StringMatcher) -> Self {
         var copy = self
         let condition = WrappedCondition {
             if let text = $0[keyPath: keyPath]?.text {
@@ -40,7 +49,8 @@ public struct SyntaxSearchTerm<T: SyntaxProtocol> {
         return copy
     }
 
-    public func add(_ keyPath: KeyPath<T, TokenSyntax>, _ matcher: StringMatcher) -> Self {
+    /// Returns a copy of this search term with a new `and` condition added.
+    public func and(_ keyPath: KeyPath<T, TokenSyntax>, _ matcher: StringMatcher) -> Self {
         var copy = self
         let condition = WrappedCondition {
             matcher.matches($0[keyPath: keyPath].text)
@@ -51,7 +61,9 @@ public struct SyntaxSearchTerm<T: SyntaxProtocol> {
         return copy
     }
 
-    public func addSub<U: SyntaxProtocol>(_ keyPath: KeyPath<T, U?>, _ matcher: SyntaxSearchTerm<U>) -> Self {
+    /// Returns a copy of this search term with a new `and` condition added that
+    /// matches deeper into the syntax tree.
+    public func andSub<U: SyntaxProtocol>(_ keyPath: KeyPath<T, U?>, _ matcher: SyntaxSearchTerm<U>) -> Self {
         var copy = self
         let condition = WrappedCondition {
             matcher.matches($0[keyPath: keyPath])
@@ -62,7 +74,9 @@ public struct SyntaxSearchTerm<T: SyntaxProtocol> {
         return copy
     }
 
-    public func addSub<U: SyntaxProtocol>(_ keyPath: KeyPath<T, U>, _ matcher: SyntaxSearchTerm<U>) -> Self {
+    /// Returns a copy of this search term with a new `and` condition added that
+    /// matches deeper into the syntax tree.
+    public func andSub<U: SyntaxProtocol>(_ keyPath: KeyPath<T, U>, _ matcher: SyntaxSearchTerm<U>) -> Self {
         var copy = self
         let condition = WrappedCondition {
             matcher.matches($0[keyPath: keyPath])
@@ -71,12 +85,6 @@ public struct SyntaxSearchTerm<T: SyntaxProtocol> {
         copy._conditions.append(condition)
 
         return copy
-    }
-
-    public func anyChild<U: SyntaxProtocol>(_ matches: SyntaxSearchTerm<U>) -> Self {
-        .init { s in
-            return s.contains(matches)
-        }
     }
 
     fileprivate struct WrappedCondition {
@@ -98,7 +106,7 @@ public extension SyntaxSearchTerm {
         .init(condition: { _ in false })
     }
 
-    /// Matches any syntax items.
+    /// Matches any syntax item.
     static var any: Self {
         .init(condition: { _ in true })
     }
@@ -261,12 +269,13 @@ public extension SyntaxCollection {
 
 public extension SyntaxSearchTerm where T == IdentifierPatternSyntax {
     static func `is`(_ text: StringMatcher) -> Self {
-        .init().add(\.identifier, text)
+        T.search.and(\.identifier, text)
     }
 }
 
 public extension SyntaxProtocol {
-    static var search: SyntaxSearchTerm<Self>.Type {
-        SyntaxSearchTerm<Self>.self
+    /// Returns an empty search term for this syntax protocol implementer.
+    static var search: SyntaxSearchTerm<Self> {
+        SyntaxSearchTerm<Self>()
     }
 }
