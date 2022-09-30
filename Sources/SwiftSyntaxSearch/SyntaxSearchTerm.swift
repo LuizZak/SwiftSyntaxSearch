@@ -33,6 +33,13 @@ public struct SyntaxSearchTerm<T: SyntaxProtocol> {
         return _conditions.allSatisfy { $0.matches(syntax) }
     }
 
+    /// Appends the list of conditions from another search term into this term,
+    /// returning a new syntax search term that matches when both underlying search
+    /// terms match.
+    public func and(_ other: Self) -> Self {
+        Self.init(_conditions: _conditions + other._conditions)
+    }
+
     /// Returns a copy of this search term with a new `and` condition added.
     public func and(_ keyPath: KeyPath<T, TokenSyntax?>, _ matcher: StringMatcher) -> Self {
         var copy = self
@@ -176,8 +183,66 @@ public extension SyntaxSearchTerm {
 
     /// Returns a new matcher that matches a child at a given keypath with a
     /// specified matcher.
-    func child<U: SyntaxProtocol>(_ keyPath: KeyPath<T, U>, matches matcher: SyntaxSearchTerm<U>) -> Self {
+    ///
+    /// If the child is `nil`, the matcher returns false.
+    static func child<U: SyntaxProtocol>(_ keyPath: KeyPath<T, U>, matches matcher: SyntaxSearchTerm<U>) -> Self {
         .init().andSub(keyPath, matcher)
+    }
+
+    /// Returns a new matcher that matches a child at a given keypath with a
+    /// specified matcher, casting the node to a specified type before performing
+    /// the matching.
+    static func child<U: SyntaxProtocol, W: SyntaxProtocol>(_ keyPath: KeyPath<T, W>, castTo type: U.Type, matches matcher: SyntaxSearchTerm<U>) -> Self {
+        .init().andSub(keyPath, .init(condition: { syntax in
+            guard let syntax = syntax.asSyntax.as(U.self) else {
+                return false
+            }
+
+            return matcher.matches(syntax)
+        }))
+    }
+
+    /// Returns a new matcher that matches a child at a given keypath with a
+    /// specified matcher, casting the node to a specified type before performing
+    /// the matching.
+    static func child<U: SyntaxProtocol, W: SyntaxProtocol>(_ keyPath: KeyPath<T, W?>, castTo type: U.Type, matches matcher: SyntaxSearchTerm<U>) -> Self {
+        .init().andSub(keyPath, .init(condition: { syntax in
+            guard let syntax = syntax.asSyntax.as(U.self) else {
+                return false
+            }
+
+            return matcher.matches(syntax)
+        }))
+    }
+
+    /// Returns a copy of this matcher with an extra matching requirement for
+    /// a child at a given keypath with a specified matcher.
+    func child<U: SyntaxProtocol>(_ keyPath: KeyPath<T, U>, matches matcher: SyntaxSearchTerm<U>) -> Self {
+        andSub(keyPath, matcher)
+    }
+
+    /// Returns a copy of this matcher with an extra matching requirement for
+    /// a child at a given keypath with a specified matcher.
+    func child<U: SyntaxProtocol, W: SyntaxProtocol>(_ keyPath: KeyPath<T, W>, castTo type: U.Type, matches matcher: SyntaxSearchTerm<U>) -> Self {
+        andSub(keyPath, .init(condition: { syntax in
+            guard let syntax = syntax.asSyntax.as(U.self) else {
+                return false
+            }
+
+            return matcher.matches(syntax)
+        }))
+    }
+
+    /// Returns a copy of this matcher with an extra matching requirement for
+    /// a child at a given keypath with a specified matcher.
+    func child<U: SyntaxProtocol, W: SyntaxProtocol>(_ keyPath: KeyPath<T, W?>, castTo type: U.Type, matches matcher: SyntaxSearchTerm<U>) -> Self {
+        andSub(keyPath, .init(condition: { syntax in
+            guard let syntax = syntax.asSyntax.as(U.self) else {
+                return false
+            }
+
+            return matcher.matches(syntax)
+        }))
     }
 }
 
@@ -293,6 +358,18 @@ public extension SyntaxCollection {
     }
 }
 
+// MARK: - Property/subscript indexers
+
+public extension SyntaxCollection where Self: Collection {
+    /// Returns the result of indexing into this syntax collection by offsetting
+    /// `self.startIndex` by `index` before indexing into the underlying collection.
+    subscript(index index: Int) -> Element {
+        let i = self.index(startIndex, offsetBy: index)
+
+        return self[i]
+    }
+}
+
 // MARK: - Concrete helper extensions
 
 public extension SyntaxSearchTerm where T == IdentifierPatternSyntax {
@@ -305,5 +382,23 @@ public extension SyntaxProtocol {
     /// Returns an empty search term for this syntax protocol implementer.
     static var search: SyntaxSearchTerm<Self> {
         SyntaxSearchTerm<Self>()
+    }
+}
+
+public extension KeyPath where Root: SyntaxProtocol {
+    func matches(_ matcher: SyntaxSearchTerm<Value>) -> SyntaxSearchTerm<Root> where Value: SyntaxProtocol {
+        SyntaxSearchTerm<Root>.child(self, matches: matcher)
+    }
+
+    func matches<V: SyntaxProtocol>(_ matcher: SyntaxSearchTerm<V>) -> SyntaxSearchTerm<Root> where Value == V? {
+        SyntaxSearchTerm<Root>.child(self, matches: matcher)
+    }
+
+    func matches<V: SyntaxProtocol>(as type: V.Type, _ matcher: SyntaxSearchTerm<V>) -> SyntaxSearchTerm<Root> where Value: SyntaxProtocol {
+        SyntaxSearchTerm<Root>.child(self, castTo: V.self, matches: matcher)
+    }
+
+    func matches<V: SyntaxProtocol, W: SyntaxProtocol>(as type: V.Type, _ matcher: SyntaxSearchTerm<V>) -> SyntaxSearchTerm<Root> where Value == W? {
+        SyntaxSearchTerm<Root>.child(self, castTo: V.self, matches: matcher)
     }
 }

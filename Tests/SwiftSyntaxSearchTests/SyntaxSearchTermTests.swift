@@ -111,6 +111,50 @@ class SyntaxSearchTermTests: XCTestCase {
         XCTAssertNil(file.findRecursive(SyntaxSearchTerm<EnumDeclSyntax>.any))
     }
 
+    func testFindRecursive_complexBind() throws {
+        let file = try Parsing.parse("""
+            class AClass {
+                init() {
+                    var decl: Int = 0
+                }
+                func member1() {
+                    var decl2: Int = 0
+                    var decl: Int = 1
+                }
+                func member2() {
+                    var decl: Int = 0, decl2: Int = 0
+                }
+            }
+            """)
+        
+        let sut = SyntaxSearchTerm<VariableDeclSyntax>
+            .child(
+                \.bindings[index: 0],
+                matches:
+                    (\PatternBindingSyntax.pattern).matches(
+                        as: IdentifierPatternSyntax.self,
+                        .token(\.identifier, matches: "decl")
+                    ) &&
+                    (\PatternBindingSyntax.initializer?.value).matches(
+                        as: IntegerLiteralExprSyntax.self,
+                        .token(\.digits, matches: "0")
+                    )
+            )
+        
+        let emptySearch = SyntaxSearchTerm<PatternBindingSyntax>()
+        let declIdentSearch = emptySearch
+            .child(
+                \.pattern,
+                castTo: IdentifierPatternSyntax.self,
+                matches: .token(\.identifier, matches: "decl")
+            )
+        
+        XCTAssertEqual(file.findAllDepthFirst(sut).map({ $0.withoutTrivia().description }), [
+            "var decl: Int = 0",
+            "var decl: Int = 0, decl2: Int = 0",
+        ])
+    }
+
     func testFindAllBreadthFirst() throws {
         let file = try Parsing.parse("""
             class AClass {

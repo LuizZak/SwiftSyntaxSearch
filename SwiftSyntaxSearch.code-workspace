@@ -11,5 +11,7 @@
             "deinitializer",
             "descendents",
         ],
+
+        "swift.buildArguments": [],
     },
 }
