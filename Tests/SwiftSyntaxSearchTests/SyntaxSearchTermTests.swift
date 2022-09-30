@@ -133,20 +133,12 @@ class SyntaxSearchTermTests: XCTestCase {
                 matches:
                     (\PatternBindingSyntax.pattern).matches(
                         as: IdentifierPatternSyntax.self,
-                        .token(\.identifier, matches: "decl")
+                        \.identifier == "decl"
                     ) &&
                     (\PatternBindingSyntax.initializer?.value).matches(
                         as: IntegerLiteralExprSyntax.self,
-                        .token(\.digits, matches: "0")
+                        \.digits == "0"
                     )
-            )
-        
-        let emptySearch = SyntaxSearchTerm<PatternBindingSyntax>()
-        let declIdentSearch = emptySearch
-            .child(
-                \.pattern,
-                castTo: IdentifierPatternSyntax.self,
-                matches: .token(\.identifier, matches: "decl")
             )
         
         XCTAssertEqual(file.findAllDepthFirst(sut).map({ $0.withoutTrivia().description }), [
