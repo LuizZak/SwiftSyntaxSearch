@@ -143,7 +143,7 @@ let declIdentSearch = emptySearch
 
 Search terms that inspect tokens can use the shortcut `KeyPath<_, TokenSyntax>.==` to generate token string matches like with `SyntaxSearchTerm.token(\.identifier, matches: "decl")`:
 
-```
+```swift
 let declIdentSearch: SyntaxSearchTerm<IdentifierPatternSyntax>
 declIdentSearch = \.identifier == "decl" // equivalent to declIdentSearch = .token(\.identifier, matches: "decl")
 ```
