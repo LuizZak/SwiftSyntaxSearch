@@ -1,3 +1,3 @@
 # SwiftSyntaxSearch
 
-A description of this package.
+A small library containing generic types for performing search and replacement on Swift Syntax trees.

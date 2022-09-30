@@ -151,6 +151,34 @@ public extension SyntaxSearchTerm {
     var not: Self {
         .init(condition: { !self.matches($0) })
     }
+
+    /// Returns a new matcher that matches a token at a given keypath with a
+    /// specified string matcher.
+    ///
+    /// If the token is `nil`, the matcher returns false.
+    static func token(_ keyPath: KeyPath<T, TokenSyntax?>, matches matcher: StringMatcher) -> Self {
+        .init().and(keyPath, matcher)
+    }
+
+    /// Returns a new matcher that matches a token at a given keypath with a
+    /// specified string matcher.
+    static func token(_ keyPath: KeyPath<T, TokenSyntax>, matches matcher: StringMatcher) -> Self {
+        .init().and(keyPath, matcher)
+    }
+
+    /// Returns a new matcher that matches a child at a given keypath with a
+    /// specified matcher.
+    ///
+    /// If the child is `nil`, the matcher returns false.
+    static func child<U: SyntaxProtocol>(_ keyPath: KeyPath<T, U?>, matches matcher: SyntaxSearchTerm<U>) -> Self {
+        .init().andSub(keyPath, matcher)
+    }
+
+    /// Returns a new matcher that matches a child at a given keypath with a
+    /// specified matcher.
+    func child<U: SyntaxProtocol>(_ keyPath: KeyPath<T, U>, matches matcher: SyntaxSearchTerm<U>) -> Self {
+        .init().andSub(keyPath, matcher)
+    }
 }
 
 public extension SyntaxSearchTerm where T: SyntaxCollection {
