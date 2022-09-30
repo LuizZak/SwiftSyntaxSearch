@@ -30,15 +30,17 @@ We can query for all variable declarations whose first pattern binding index bin
 ```swift
 let declOf0Search = SyntaxSearchTerm<VariableDeclSyntax>
     .child(
-        \.bindings[index: 0],
+        \VariableDeclSyntax.bindings[index: 0],
         matches:
             (\PatternBindingSyntax.pattern).matches(
                 as: IdentifierPatternSyntax.self,
-                .token(\.identifier, matches: "decl")
+                SyntaxReplacer<IdentifierPatternSyntax>
+                    .token(\.identifier, matches: "decl")
             ) &&
             (\PatternBindingSyntax.initializer?.value).matches(
                 as: IntegerLiteralExprSyntax.self,
-                .token(\.digits, matches: "0")
+                SyntaxReplacer<IntegerLiteralExprSyntax>
+                    .token(\.digits, matches: "0")
             )
     )
 ```
@@ -75,8 +77,10 @@ We can find and replace all variable declarations that bind an integer of value 
 let declOf0Or2Replacer =
     SyntaxReplacer<IntegerLiteralExprSyntax>(searchTerm:
         .or([
-            .token(\.digits, matches: "0"),
-            .token(\.digits, matches: "2"),
+            SyntaxReplacer<IntegerLiteralExprSyntax>
+                .token(\.digits, matches: "0"),
+            SyntaxReplacer<IntegerLiteralExprSyntax>
+                .token(\.digits, matches: "2"),
         ])
     ) { node in
         node.withDigits(
@@ -110,7 +114,8 @@ The following syntaxes are available and produce the same result:
 // Keypath-based binding
 (\PatternBindingSyntax.pattern).matches(
     as: IdentifierPatternSyntax.self,
-    .token(\.identifier, matches: "decl")
+    SyntaxSearchTerm<IdentifierPatternSyntax>
+        .token(\.identifier, matches: "decl")
 )
 
 // Struct creation
@@ -123,7 +128,9 @@ SyntaxSearchTerm<PatternBindingSyntax>
         castTo: IdentifierPatternSyntax.self,
         
         // Match IdentifierPatternSyntax.identifier (a TokenSyntax) with a given StringMatcher (string literals match with `==`)
-        matches: .token(\.identifier, matches: "decl")
+        matches:
+            SyntaxSearchTerm<IdentifierPatternSyntax>
+                .token(\.identifier, matches: "decl")
     )
 
 // Appending to existing search term
@@ -137,7 +144,9 @@ let declIdentSearch = emptySearch
         castTo: IdentifierPatternSyntax.self,
 
         // Match IdentifierPatternSyntax.identifier (a TokenSyntax) with a given StringMatcher (string literals match with `==`)
-        matches: .token(\.identifier, matches: "decl")
+        matches:
+            SyntaxSearchTerm<IdentifierPatternSyntax>
+                .token(\.identifier, matches: "decl")
     )
 ```
 
