@@ -141,6 +141,13 @@ let declIdentSearch = emptySearch
     )
 ```
 
+Search terms that inspect tokens can use the shortcut `KeyPath<_, TokenSyntax>.==` to generate token string matches like with `SyntaxSearchTerm.token(\.identifier, matches: "decl")`:
+
+```
+let declIdentSearch: SyntaxSearchTerm<IdentifierPatternSyntax>
+declIdentSearch = \.identifier == "decl" // equivalent to declIdentSearch = .token(\.identifier, matches: "decl")
+```
+
 #### StringMatcher
 
 A simple enum-based string matcher that performs matches based on equality, prefix, suffix or string containment. Used by `SyntaxSearchTerm` to perform token-based string equality:
