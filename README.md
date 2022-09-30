@@ -2,6 +2,10 @@
 
 A small experimental library containing generic types for performing search and replacement on Swift Syntax trees.
 
+## Requirements
+
+Swift 5.7
+
 ## Searching
 
 From a given syntax tree:
