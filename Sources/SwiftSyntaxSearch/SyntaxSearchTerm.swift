@@ -308,54 +308,6 @@ public extension SyntaxSearchTerm where T: SyntaxCollection {
     static func allSatisfy(_ condition: @escaping (T?) -> Bool) -> Self where T.Element: SyntaxProtocol {
         .init(condition: condition)
     }
-
-    static func unorderedStrict(_ matchers: [SyntaxSearchTerm<T.Element>]) -> Self where T.Element: SyntaxProtocol {
-        return .init(condition: { node in
-            guard let node = node else { return false }
-
-            return TermSequenceMatcher(
-                actual: node,
-                orderSensitive: false,
-                exactElementCount: true
-            ).matches(matchers)
-        })
-    }
-
-    static func orderedStrict(_ matchers: [SyntaxSearchTerm<T.Element>]) -> Self where T.Element: SyntaxProtocol {
-        return .init(condition: { node in
-            guard let node = node else { return false }
-
-            return TermSequenceMatcher(
-                actual: node,
-                orderSensitive: true,
-                exactElementCount: true
-            ).matches(matchers)
-        })
-    }
-
-    static func contains(_ matchers: [SyntaxSearchTerm<T.Element>]) -> Self where T.Element: SyntaxProtocol {
-        return .init(condition: { node in
-            guard let node = node else { return false }
-
-            return TermSequenceMatcher(
-                actual: node,
-                orderSensitive: false,
-                exactElementCount: false
-            ).matches(matchers)
-        })
-    }
-
-    static func containsOrdered(_ matchers: [SyntaxSearchTerm<T.Element>]) -> Self where T.Element: SyntaxProtocol {
-        return .init(condition: { node in
-            guard let node = node else { return false }
-
-            return TermSequenceMatcher(
-                actual: node,
-                orderSensitive: true,
-                exactElementCount: false
-            ).matches(matchers)
-        })
-    }
 }
 
 public extension SyntaxProtocol {
