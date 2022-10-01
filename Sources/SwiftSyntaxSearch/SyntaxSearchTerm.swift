@@ -5,7 +5,7 @@ import SwiftSyntax
 public struct SyntaxSearchTerm<T: SyntaxProtocol> {
     fileprivate var _conditions: [WrappedCondition] = []
     
-    fileprivate init(condition: @escaping (T) -> Bool) {
+    fileprivate init(condition: @escaping (T?) -> Bool) {
         self.init(_conditions: [
             .init(closure: condition)
         ])
@@ -44,7 +44,9 @@ public struct SyntaxSearchTerm<T: SyntaxProtocol> {
     public func and(_ keyPath: KeyPath<T, String>, _ matcher: StringMatcher) -> Self {
         var copy = self
         let condition = WrappedCondition {
-            matcher.matches($0[keyPath: keyPath])
+            guard let node = $0 else { return false }
+
+            return matcher.matches(node[keyPath: keyPath])
         }
         
         copy._conditions.append(condition)
@@ -56,11 +58,13 @@ public struct SyntaxSearchTerm<T: SyntaxProtocol> {
     public func and(_ keyPath: KeyPath<T, String?>, _ matcher: StringMatcher) -> Self {
         var copy = self
         let condition = WrappedCondition {
-            if let text = $0[keyPath: keyPath] {
-                return matcher.matches(text)
+            guard let node = $0 else { return false }
+
+            guard let text = node[keyPath: keyPath] else {
+                return false
             }
 
-            return false
+            return matcher.matches(text)
         }
         
         copy._conditions.append(condition)
@@ -72,7 +76,9 @@ public struct SyntaxSearchTerm<T: SyntaxProtocol> {
     public func and(_ keyPath: KeyPath<T, TokenSyntax>, _ matcher: StringMatcher) -> Self {
         var copy = self
         let condition = WrappedCondition {
-            matcher.matches($0[keyPath: keyPath].text)
+            guard let node = $0 else { return false }
+
+            return matcher.matches(node[keyPath: keyPath].text)
         }
         
         copy._conditions.append(condition)
@@ -84,7 +90,9 @@ public struct SyntaxSearchTerm<T: SyntaxProtocol> {
     public func and(_ keyPath: KeyPath<T, TokenSyntax?>, _ matcher: StringMatcher) -> Self {
         var copy = self
         let condition = WrappedCondition {
-            if let text = $0[keyPath: keyPath]?.text {
+            guard let node = $0 else { return false }
+
+            if let text = node[keyPath: keyPath]?.text {
                 return matcher.matches(text)
             }
 
@@ -101,7 +109,7 @@ public struct SyntaxSearchTerm<T: SyntaxProtocol> {
     public func andSub<U: SyntaxProtocol>(_ keyPath: KeyPath<T, U>, _ matcher: SyntaxSearchTerm<U>) -> Self {
         var copy = self
         let condition = WrappedCondition {
-            matcher.matches($0[keyPath: keyPath])
+            matcher.matches($0?[keyPath: keyPath])
         }
         
         copy._conditions.append(condition)
@@ -114,7 +122,7 @@ public struct SyntaxSearchTerm<T: SyntaxProtocol> {
     public func andSub<U: SyntaxProtocol>(_ keyPath: KeyPath<T, U?>, _ matcher: SyntaxSearchTerm<U>) -> Self {
         var copy = self
         let condition = WrappedCondition {
-            matcher.matches($0[keyPath: keyPath])
+            matcher.matches($0?[keyPath: keyPath])
         }
         
         copy._conditions.append(condition)
@@ -123,13 +131,13 @@ public struct SyntaxSearchTerm<T: SyntaxProtocol> {
     }
 
     fileprivate struct WrappedCondition {
-        private let _closure: (T) -> Bool
+        private let _closure: (T?) -> Bool
 
-        init(closure: @escaping (T) -> Bool) {
+        init(closure: @escaping (T?) -> Bool) {
             self._closure = closure
         }
 
-        func matches(_ syntax: T) -> Bool {
+        func matches(_ syntax: T?) -> Bool {
             _closure(syntax)
         }
     }
@@ -146,13 +154,23 @@ public extension SyntaxSearchTerm {
         .init(condition: { _ in true })
     }
 
+    /// Matches `nil` syntax nodes.
+    static var isNil: Self {
+        .init(condition: { node in node == nil })
+    }
+
+    /// Matches non-`nil` syntax nodes.
+    static var isNonNil: Self {
+        .init(condition: { node in node != nil })
+    }
+
     /// Recursively searches a syntax tree looking for the first syntax object
     /// that matches a given search term.
     ///
     /// Search is performed in breadth-first order.
     static func anyChildRecursive<U: SyntaxProtocol>(_ matches: SyntaxSearchTerm<U>) -> Self {
         .init { s in
-            return s.contains(matches)
+            return s?.contains(matches) ?? false
         }
     }
 
@@ -234,11 +252,7 @@ public extension SyntaxSearchTerm {
     /// the matching.
     static func child<U: SyntaxProtocol, W: SyntaxProtocol>(_ keyPath: KeyPath<T, W>, castTo type: U.Type, matches matcher: SyntaxSearchTerm<U>) -> Self {
         .init().andSub(keyPath, .init(condition: { syntax in
-            guard let syntax = syntax.asSyntax.as(U.self) else {
-                return false
-            }
-
-            return matcher.matches(syntax)
+            matcher.matches(syntax?.asSyntax.as(U.self))
         }))
     }
 
@@ -247,11 +261,7 @@ public extension SyntaxSearchTerm {
     /// the matching.
     static func child<U: SyntaxProtocol, W: SyntaxProtocol>(_ keyPath: KeyPath<T, W?>, castTo type: U.Type, matches matcher: SyntaxSearchTerm<U>) -> Self {
         .init().andSub(keyPath, .init(condition: { syntax in
-            guard let syntax = syntax.asSyntax.as(U.self) else {
-                return false
-            }
-
-            return matcher.matches(syntax)
+            matcher.matches(syntax?.asSyntax.as(U.self))
         }))
     }
 
@@ -265,11 +275,7 @@ public extension SyntaxSearchTerm {
     /// a child at a given keypath with a specified matcher.
     func child<U: SyntaxProtocol, W: SyntaxProtocol>(_ keyPath: KeyPath<T, W>, castTo type: U.Type, matches matcher: SyntaxSearchTerm<U>) -> Self {
         andSub(keyPath, .init(condition: { syntax in
-            guard let syntax = syntax.asSyntax.as(U.self) else {
-                return false
-            }
-
-            return matcher.matches(syntax)
+            matcher.matches(syntax?.asSyntax.as(U.self))
         }))
     }
 
@@ -277,34 +283,78 @@ public extension SyntaxSearchTerm {
     /// a child at a given keypath with a specified matcher.
     func child<U: SyntaxProtocol, W: SyntaxProtocol>(_ keyPath: KeyPath<T, W?>, castTo type: U.Type, matches matcher: SyntaxSearchTerm<U>) -> Self {
         andSub(keyPath, .init(condition: { syntax in
-            guard let syntax = syntax.asSyntax.as(U.self) else {
-                return false
-            }
-
-            return matcher.matches(syntax)
+            matcher.matches(syntax?.asSyntax.as(U.self))
         }))
     }
 }
 
 public extension SyntaxSearchTerm where T: SyntaxCollection {
     static var isEmpty: Self {
-        .init(condition: { $0.count == 0 })
+        .init(condition: { $0?.count == 0 })
     }
 
     static func count(is expected: Int) -> Self {
         Self {
-            $0.count == expected
+            $0?.count == expected
         }
     }
 
     static func allSatisfy(_ matcher: SyntaxSearchTerm<T.Element>) -> Self where T.Element: SyntaxProtocol {
         .init(condition: {
-            $0.allSatisfy(matcher.matches)
+            $0?.allSatisfy(matcher.matches) ?? false
         })
     }
 
-    static func allSatisfy(_ condition: @escaping (T) -> Bool) -> Self where T.Element: SyntaxProtocol {
+    static func allSatisfy(_ condition: @escaping (T?) -> Bool) -> Self where T.Element: SyntaxProtocol {
         .init(condition: condition)
+    }
+
+    static func unorderedStrict(_ matchers: [SyntaxSearchTerm<T.Element>]) -> Self where T.Element: SyntaxProtocol {
+        return .init(condition: { node in
+            guard let node = node else { return false }
+
+            return TermSequenceMatcher(
+                actual: node,
+                orderSensitive: false,
+                exactElementCount: true
+            ).matches(matchers)
+        })
+    }
+
+    static func orderedStrict(_ matchers: [SyntaxSearchTerm<T.Element>]) -> Self where T.Element: SyntaxProtocol {
+        return .init(condition: { node in
+            guard let node = node else { return false }
+
+            return TermSequenceMatcher(
+                actual: node,
+                orderSensitive: true,
+                exactElementCount: true
+            ).matches(matchers)
+        })
+    }
+
+    static func contains(_ matchers: [SyntaxSearchTerm<T.Element>]) -> Self where T.Element: SyntaxProtocol {
+        return .init(condition: { node in
+            guard let node = node else { return false }
+
+            return TermSequenceMatcher(
+                actual: node,
+                orderSensitive: false,
+                exactElementCount: false
+            ).matches(matchers)
+        })
+    }
+
+    static func containsOrdered(_ matchers: [SyntaxSearchTerm<T.Element>]) -> Self where T.Element: SyntaxProtocol {
+        return .init(condition: { node in
+            guard let node = node else { return false }
+
+            return TermSequenceMatcher(
+                actual: node,
+                orderSensitive: true,
+                exactElementCount: false
+            ).matches(matchers)
+        })
     }
 }
 
