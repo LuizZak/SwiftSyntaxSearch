@@ -3,9 +3,9 @@ import SwiftSyntax
 /// Struct that can be used to perform searches and pattern-matching across complex
 /// SwiftSyntax `SyntaxProtocol` trees.
 public struct SyntaxSearchTerm<T: SyntaxProtocol> {
-    fileprivate var _conditions: [WrappedCondition] = []
+    internal var _conditions: [WrappedCondition] = []
     
-    fileprivate init(condition: @escaping (T?) -> Bool) {
+    internal init(condition: @escaping (SyntaxProtocol?) -> Bool) {
         self.init(_conditions: [
             .init(closure: condition)
         ])
@@ -19,14 +19,14 @@ public struct SyntaxSearchTerm<T: SyntaxProtocol> {
         self.init(_conditions: [])
     }
 
-    fileprivate init(_conditions: [SyntaxSearchTerm<T>.WrappedCondition]) {
+    internal init(_conditions: [WrappedCondition]) {
         self._conditions = _conditions
     }
 
     /// Returns whether a given syntax protocol type is of type `T`, and all
     /// conditions associated with this search term are fulfilled.
     public func matches(_ syntax: SyntaxProtocol?) -> Bool {
-        guard let syntax = syntax?.asSyntax.as(T.self) else {
+        guard let syntax = syntax?.asSyntax, syntax.is(T.self) else {
             return false
         }
 
@@ -44,7 +44,7 @@ public struct SyntaxSearchTerm<T: SyntaxProtocol> {
     public func and(_ keyPath: KeyPath<T, String>, _ matcher: StringMatcher) -> Self {
         var copy = self
         let condition = WrappedCondition {
-            guard let node = $0 else { return false }
+            guard let node = $0?.castTo(T.self) else { return false }
 
             return matcher.matches(node[keyPath: keyPath])
         }
@@ -58,7 +58,7 @@ public struct SyntaxSearchTerm<T: SyntaxProtocol> {
     public func and(_ keyPath: KeyPath<T, String?>, _ matcher: StringMatcher) -> Self {
         var copy = self
         let condition = WrappedCondition {
-            guard let node = $0 else { return false }
+            guard let node = $0?.castTo(T.self) else { return false }
 
             guard let text = node[keyPath: keyPath] else {
                 return false
@@ -76,7 +76,7 @@ public struct SyntaxSearchTerm<T: SyntaxProtocol> {
     public func and(_ keyPath: KeyPath<T, TokenSyntax>, _ matcher: StringMatcher) -> Self {
         var copy = self
         let condition = WrappedCondition {
-            guard let node = $0 else { return false }
+            guard let node = $0?.castTo(T.self) else { return false }
 
             return matcher.matches(node[keyPath: keyPath].text)
         }
@@ -90,7 +90,7 @@ public struct SyntaxSearchTerm<T: SyntaxProtocol> {
     public func and(_ keyPath: KeyPath<T, TokenSyntax?>, _ matcher: StringMatcher) -> Self {
         var copy = self
         let condition = WrappedCondition {
-            guard let node = $0 else { return false }
+            guard let node = $0?.castTo(T.self) else { return false }
 
             if let text = node[keyPath: keyPath]?.text {
                 return matcher.matches(text)
@@ -109,7 +109,9 @@ public struct SyntaxSearchTerm<T: SyntaxProtocol> {
     public func andSub<U: SyntaxProtocol>(_ keyPath: KeyPath<T, U>, _ matcher: SyntaxSearchTerm<U>) -> Self {
         var copy = self
         let condition = WrappedCondition {
-            matcher.matches($0?[keyPath: keyPath])
+            let node = $0?.castTo(T.self)
+
+            return matcher.matches(node?[keyPath: keyPath])
         }
         
         copy._conditions.append(condition)
@@ -122,24 +124,26 @@ public struct SyntaxSearchTerm<T: SyntaxProtocol> {
     public func andSub<U: SyntaxProtocol>(_ keyPath: KeyPath<T, U?>, _ matcher: SyntaxSearchTerm<U>) -> Self {
         var copy = self
         let condition = WrappedCondition {
-            matcher.matches($0?[keyPath: keyPath])
+            let node = $0?.castTo(T.self)
+
+            return matcher.matches(node?[keyPath: keyPath])
         }
         
         copy._conditions.append(condition)
 
         return copy
     }
+}
 
-    fileprivate struct WrappedCondition {
-        private let _closure: (T?) -> Bool
+internal struct WrappedCondition {
+    private let _closure: (SyntaxProtocol?) -> Bool
 
-        init(closure: @escaping (T?) -> Bool) {
-            self._closure = closure
-        }
+    init(closure: @escaping (SyntaxProtocol?) -> Bool) {
+        self._closure = closure
+    }
 
-        func matches(_ syntax: T?) -> Bool {
-            _closure(syntax)
-        }
+    func matches(_ syntax: SyntaxProtocol?) -> Bool {
+        _closure(syntax)
     }
 }
 
@@ -151,7 +155,7 @@ public extension SyntaxSearchTerm {
 
     /// Matches any syntax item.
     static var any: Self {
-        .init(condition: { _ in true })
+        .init(condition: { node in node?.castTo(T.self) != nil })
     }
 
     /// Matches `nil` syntax nodes.
@@ -290,27 +294,31 @@ public extension SyntaxSearchTerm {
 
 public extension SyntaxSearchTerm where T: SyntaxCollection {
     static var isEmpty: Self {
-        .init(condition: { $0?.count == 0 })
+        .init(condition: { $0?.castTo(T.self)?.count == 0 })
     }
 
     static func count(is expected: Int) -> Self {
         Self {
-            $0?.count == expected
+            $0?.castTo(T.self)?.count == expected
         }
     }
 
     static func allSatisfy(_ matcher: SyntaxSearchTerm<T.Element>) -> Self where T.Element: SyntaxProtocol {
         .init(condition: {
-            $0?.allSatisfy(matcher.matches) ?? false
+            $0?.castTo(T.self)?.allSatisfy(matcher.matches) ?? false
         })
     }
 
-    static func allSatisfy(_ condition: @escaping (T?) -> Bool) -> Self where T.Element: SyntaxProtocol {
+    static func allSatisfy(_ condition: @escaping (SyntaxProtocol?) -> Bool) -> Self where T.Element: SyntaxProtocol {
         .init(condition: condition)
     }
 }
 
 public extension SyntaxProtocol {
+    internal func castTo<T: SyntaxProtocol>(_ type: T.Type = T.self) -> T? {
+        Syntax(self).as(type)
+    }
+
     /// Returns `true` if any child syntax node within this syntax object matches
     /// the given search term.
     ///
