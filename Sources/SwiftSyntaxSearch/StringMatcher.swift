@@ -12,6 +12,9 @@ public enum StringMatcher: Equatable, CustomStringConvertible {
     /// Matches `*term`, case sensitive.
     case suffix(String)
 
+    /// Inverts the result of a string matcher.
+    indirect case not(Self)
+
     public func matches(_ str: String) -> Bool {
         switch self {
         case .exact(let exp):
@@ -25,6 +28,9 @@ public enum StringMatcher: Equatable, CustomStringConvertible {
 
         case .suffix(let exp):
             return str.hasSuffix(exp)
+
+        case .not(let exp):
+            return exp.matches(str)
         }
     }
 
@@ -41,6 +47,9 @@ public enum StringMatcher: Equatable, CustomStringConvertible {
 
         case .suffix(let exp):
             return "*\(exp)"
+        
+        case .not(let exp):
+            return "!(\(exp))"
         }
     }
 }
@@ -48,5 +57,11 @@ public enum StringMatcher: Equatable, CustomStringConvertible {
 extension StringMatcher: ExpressibleByStringLiteral {
     public init(stringLiteral value: String) {
         self = .exact(value)
+    }
+}
+
+public extension StringMatcher {
+    static prefix func ! (lhs: Self) -> Self {
+        .not(lhs)
     }
 }

@@ -41,10 +41,22 @@ public struct SyntaxSearchTerm<T: SyntaxProtocol> {
     }
 
     /// Returns a copy of this search term with a new `and` condition added.
-    public func and(_ keyPath: KeyPath<T, TokenSyntax?>, _ matcher: StringMatcher) -> Self {
+    public func and(_ keyPath: KeyPath<T, String>, _ matcher: StringMatcher) -> Self {
         var copy = self
         let condition = WrappedCondition {
-            if let text = $0[keyPath: keyPath]?.text {
+            matcher.matches($0[keyPath: keyPath])
+        }
+        
+        copy._conditions.append(condition)
+
+        return copy
+    }
+
+    /// Returns a copy of this search term with a new `and` condition added.
+    public func and(_ keyPath: KeyPath<T, String?>, _ matcher: StringMatcher) -> Self {
+        var copy = self
+        let condition = WrappedCondition {
+            if let text = $0[keyPath: keyPath] {
                 return matcher.matches(text)
             }
 
@@ -68,9 +80,25 @@ public struct SyntaxSearchTerm<T: SyntaxProtocol> {
         return copy
     }
 
+    /// Returns a copy of this search term with a new `and` condition added.
+    public func and(_ keyPath: KeyPath<T, TokenSyntax?>, _ matcher: StringMatcher) -> Self {
+        var copy = self
+        let condition = WrappedCondition {
+            if let text = $0[keyPath: keyPath]?.text {
+                return matcher.matches(text)
+            }
+
+            return false
+        }
+        
+        copy._conditions.append(condition)
+
+        return copy
+    }
+
     /// Returns a copy of this search term with a new `and` condition added that
     /// matches deeper into the syntax tree.
-    public func andSub<U: SyntaxProtocol>(_ keyPath: KeyPath<T, U?>, _ matcher: SyntaxSearchTerm<U>) -> Self {
+    public func andSub<U: SyntaxProtocol>(_ keyPath: KeyPath<T, U>, _ matcher: SyntaxSearchTerm<U>) -> Self {
         var copy = self
         let condition = WrappedCondition {
             matcher.matches($0[keyPath: keyPath])
@@ -83,7 +111,7 @@ public struct SyntaxSearchTerm<T: SyntaxProtocol> {
 
     /// Returns a copy of this search term with a new `and` condition added that
     /// matches deeper into the syntax tree.
-    public func andSub<U: SyntaxProtocol>(_ keyPath: KeyPath<T, U>, _ matcher: SyntaxSearchTerm<U>) -> Self {
+    public func andSub<U: SyntaxProtocol>(_ keyPath: KeyPath<T, U?>, _ matcher: SyntaxSearchTerm<U>) -> Self {
         var copy = self
         let condition = WrappedCondition {
             matcher.matches($0[keyPath: keyPath])
@@ -159,11 +187,15 @@ public extension SyntaxSearchTerm {
         .init(condition: { !self.matches($0) })
     }
 
-    /// Returns a new matcher that matches a token at a given keypath with a
+    /// Returns a new matcher that matches a string at a given keypath with a
     /// specified string matcher.
-    ///
-    /// If the token is `nil`, the matcher returns false.
-    static func token(_ keyPath: KeyPath<T, TokenSyntax?>, matches matcher: StringMatcher) -> Self {
+    static func string(_ keyPath: KeyPath<T, String>, matches matcher: StringMatcher) -> Self {
+        .init().and(keyPath, matcher)
+    }
+
+    /// Returns a new matcher that matches a string at a given keypath with a
+    /// specified string matcher.
+    static func string(_ keyPath: KeyPath<T, String?>, matches matcher: StringMatcher) -> Self {
         .init().and(keyPath, matcher)
     }
 
@@ -173,12 +205,12 @@ public extension SyntaxSearchTerm {
         .init().and(keyPath, matcher)
     }
 
-    /// Returns a new matcher that matches a child at a given keypath with a
-    /// specified matcher.
+    /// Returns a new matcher that matches a token at a given keypath with a
+    /// specified string matcher.
     ///
-    /// If the child is `nil`, the matcher returns false.
-    static func child<U: SyntaxProtocol>(_ keyPath: KeyPath<T, U?>, matches matcher: SyntaxSearchTerm<U>) -> Self {
-        .init().andSub(keyPath, matcher)
+    /// If the token is `nil`, the matcher returns false.
+    static func token(_ keyPath: KeyPath<T, TokenSyntax?>, matches matcher: StringMatcher) -> Self {
+        .init().and(keyPath, matcher)
     }
 
     /// Returns a new matcher that matches a child at a given keypath with a
@@ -186,6 +218,14 @@ public extension SyntaxSearchTerm {
     ///
     /// If the child is `nil`, the matcher returns false.
     static func child<U: SyntaxProtocol>(_ keyPath: KeyPath<T, U>, matches matcher: SyntaxSearchTerm<U>) -> Self {
+        .init().andSub(keyPath, matcher)
+    }
+
+    /// Returns a new matcher that matches a child at a given keypath with a
+    /// specified matcher.
+    ///
+    /// If the child is `nil`, the matcher returns false.
+    static func child<U: SyntaxProtocol>(_ keyPath: KeyPath<T, U?>, matches matcher: SyntaxSearchTerm<U>) -> Self {
         .init().andSub(keyPath, matcher)
     }
 

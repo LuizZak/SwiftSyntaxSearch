@@ -22,4 +22,38 @@ public extension KeyPath where Root: SyntaxProtocol, Value == TokenSyntax {
     static func == (lhs: KeyPath, rhs: StringMatcher) -> SyntaxSearchTerm<Root> {
         SyntaxSearchTerm<Root>.token(lhs, matches: rhs)
     }
+
+    static func != (lhs: KeyPath, rhs: StringMatcher) -> SyntaxSearchTerm<Root> {
+        SyntaxSearchTerm<Root>.token(lhs, matches: !rhs)
+    }
+}
+
+public extension KeyPath where Root: SyntaxProtocol, Value == TokenSyntax? {
+    static func == (lhs: KeyPath, rhs: StringMatcher) -> SyntaxSearchTerm<Root> {
+        SyntaxSearchTerm<Root>.token(lhs, matches: rhs)
+    }
+
+    static func != (lhs: KeyPath, rhs: StringMatcher) -> SyntaxSearchTerm<Root> {
+        SyntaxSearchTerm<Root>.token(lhs, matches: !rhs)
+    }
+}
+
+public extension KeyPath where Root: SyntaxProtocol, Value == String {
+    static func == (lhs: KeyPath, rhs: StringMatcher) -> SyntaxSearchTerm<Root> {
+        SyntaxSearchTerm<Root>.string(lhs, matches: rhs)
+    }
+
+    static func != (lhs: KeyPath, rhs: StringMatcher) -> SyntaxSearchTerm<Root> {
+        SyntaxSearchTerm<Root>.string(lhs, matches: !rhs)
+    }
+}
+
+public extension KeyPath where Root: SyntaxProtocol, Value == String? {
+    static func == (lhs: KeyPath, rhs: StringMatcher) -> SyntaxSearchTerm<Root> {
+        SyntaxSearchTerm<Root>.string(lhs, matches: rhs)
+    }
+
+    static func != (lhs: KeyPath, rhs: StringMatcher) -> SyntaxSearchTerm<Root> {
+        SyntaxSearchTerm<Root>.string(lhs, matches: !rhs)
+    }
 }
