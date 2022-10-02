@@ -6,7 +6,6 @@
         },
     ],
     "settings": {
-        "sourcekit-lsp.trace.server": "messages",
         "cSpell.words": [
             "deinitializer",
             "descendents",
