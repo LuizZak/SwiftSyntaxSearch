@@ -33,7 +33,9 @@ public extension SyntaxProtocol {
     /// Finds and replaces all syntax nodes that match a specified syntax
     /// replacer's search term with its `replacer` result.
     func replacingAll<T>(_ search: SyntaxReplacer<T>) -> Self {
-        let rewriter = SyntaxTermRewriter(replacer: search)
+        let rewriter = SyntaxTermRewriter { node in
+            return search.matchAndReplace(node).map(Syntax.init)
+        }
 
         return rewriter.visit(Syntax(self)).as(Self.self) ?? self
     }

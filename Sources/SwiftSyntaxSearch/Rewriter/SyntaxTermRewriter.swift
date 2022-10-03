@@ -1,13 +1,13 @@
 import SwiftSyntax
 
-class SyntaxTermRewriter<T: SyntaxProtocol>: SyntaxRewriter {
-    let replacer: SyntaxReplacer<T>
+class SyntaxTermRewriter: SyntaxRewriter {
+    let replacer: (Syntax) -> Syntax?
 
-    init(replacer: SyntaxReplacer<T>) {
+    init(replacer: @escaping (Syntax) -> Syntax?) {
         self.replacer = replacer
     }
 
     override func visitAny(_ node: Syntax) -> Syntax? {
-        return replacer.matchAndReplace(node).map(Syntax.init)
+        return replacer(node)
     }
 }

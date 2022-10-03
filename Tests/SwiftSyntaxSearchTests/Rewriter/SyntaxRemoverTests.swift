@@ -3,8 +3,8 @@ import SwiftSyntax
 
 @testable import SwiftSyntaxSearch
 
-class SyntaxReplacerTests: XCTestCase {
-    func testReplacingAll() throws {
+class SyntaxRemoverTests: XCTestCase {
+    func testRemovingAll() throws {
         let file = try Parsing.parse("""
             class AClass {
                 init() {
@@ -19,25 +19,21 @@ class SyntaxReplacerTests: XCTestCase {
             """)
 
         let sut =
-            SyntaxReplacer<IntegerLiteralExprSyntax>(searchTerm:
+            SyntaxRemover<IntegerLiteralExprSyntax>(searchTerm:
                 .or([
                     .token(\.digits, matches: "0"),
                     .token(\.digits, matches: "2"),
                 ])
-            ) { node in
-                node.withDigits(
-                    SyntaxFactory.makeIntegerLiteral("50_" + node.digits.text)
-                )
-            }
+            )
         
-        let result = file.replacingAll(sut)
+        let result = file.removingAll(sut)
         XCTAssertEqual(result.description, """
             class AClass {
                 init() {
-                    var decl: Int = 50_0
+                    var 
                 }
                 func member(_ param: Int = 1) {
-                    var decl: Int = 50_2
+                    var 
                 }
             }
 
