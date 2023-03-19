@@ -10,7 +10,7 @@ protocol _RemovableSyntaxCollection: SyntaxCollection {
     /// syntax collection while maintaining the validity of the syntax tree.
     ///
     /// Default implementation returns `true` and must be implemented in specialized
-    /// types that can form 
+    /// types that can form incorrect syntax trees when a child is removed.
     func canRemove(childAt index: Int) -> Bool
 }
 
