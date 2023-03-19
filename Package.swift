@@ -10,7 +10,7 @@ let package = Package(
         ),
     ],
     dependencies: [
-        .package(url: "https://github.com/apple/swift-syntax.git", branch: "0.50700.0"),
+        .package(url: "https://github.com/apple/swift-syntax.git", branch: "0.50700.1"),
     ],
     targets: [
         .target(
