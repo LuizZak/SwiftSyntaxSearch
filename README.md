@@ -147,7 +147,9 @@ syntax.removingAll(declOf0Or2Remover)
 // let global = 3
 ```
 
-Removal occurs on the first ancestor of a matching node that is of type `SyntaxCollection`. The list of such collections that are recognized is available in `Sources/SwiftSyntaxSearch/Rewriter/Ext/Syntax+Collection.swift`.
+Removal occurs on the first ancestor of a matching node that is of type `SyntaxCollection` and where the removal of a node would result in a syntax tree that is not incomplete. The result might still not be syntactically or semantically correct, however.
+
+The list of such collections that are recognized is available in `Sources/SwiftSyntaxSearch/Rewriter/Ext/Syntax+Collection.swift`.
 
 ### Creating search terms
 
