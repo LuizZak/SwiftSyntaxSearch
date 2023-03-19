@@ -106,6 +106,49 @@ syntax.replacingAll(declOf0Or2Replacer)
 // let global = 3
 ```
 
+### Remove
+
+From a given syntax tree:
+
+```swift
+class AClass {
+    init() {
+        var decl: Int = 0
+    }
+    func member(_ param: Int = 1) {
+        var decl: Int = 2
+    }
+}
+let global = 3
+```
+
+We can remove all nodes that contain an integer literal of value 0 or two like so:
+
+```swift
+let declOf0Or2Remover =
+    SyntaxRemover<IntegerLiteralExprSyntax>(searchTerm:
+        .or([
+            .token(\.digits, matches: "0"),
+            .token(\.digits, matches: "2"),
+        ])
+    )
+```
+
+```swift
+syntax.removingAll(declOf0Or2Remover)
+// class AClass {
+//     init() {
+//         var 
+//     }
+//     func member(_ param: Int = 1) {
+//         var 
+//     }
+// }
+// let global = 3
+```
+
+Removal occurs on the first ancestor of a matching node that is of type `SyntaxCollection`. The list of such collections that are recognized is available in `Sources/SwiftSyntaxSearch/Rewriter/Ext/Syntax+Collection.swift`.
+
 ### Creating search terms
 
 The following syntaxes are available and produce the same result:
