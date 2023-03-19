@@ -1,5 +1,5 @@
 /// Matches strings, either partially, fully or by prefix-/suffix-
-public enum StringMatcher: Equatable, CustomStringConvertible {
+public enum StringMatcher: Equatable, CustomStringConvertible, StringMatcherType {
     /// Matches `term` exactly.
     case exact(String)
 
