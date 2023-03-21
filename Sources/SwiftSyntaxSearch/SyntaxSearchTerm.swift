@@ -313,6 +313,24 @@ public extension SyntaxSearchTerm {
         }))
     }
 
+    /// Returns a new matcher that matches a node by matching its parent with a
+    /// specified matcher.
+    ///
+    /// If the parent is `nil`, the matcher returns false.
+    static func parent<U: SyntaxProtocol>(matches matcher: SyntaxSearchTerm<U>) -> Self {
+        .init().andParent(matcher)
+    }
+
+    /// Returns a new matcher that matches a node by matching its ancestors with
+    /// a specified matcher. The matcher recursively traverses the syntax tree
+    /// until the root is reached, and returns `true` on the first ancestor that
+    /// matches `matcher`.
+    ///
+    /// If the parent is `nil`, the matcher returns false.
+    static func anyAncestor<U: SyntaxProtocol>(matches matcher: SyntaxSearchTerm<U>) -> Self {
+        .init().andAnyAncestor(matcher)
+    }
+
     /// Returns a copy of this matcher with an extra matching requirement for
     /// a child at a given keypath with a specified matcher.
     func child<U: SyntaxProtocol>(_ keyPath: KeyPath<T, U>, matches matcher: SyntaxSearchTerm<U>) -> Self {
