@@ -96,6 +96,72 @@ class SyntaxSearchTermTests: XCTestCase {
         XCTAssertFalse(empty.matches(syntax))
     }
 
+    func testAndParent() throws {
+        let file = try Parsing.parse("""
+            class AClass {
+                init() {
+                    var decl: Int = 0
+                }
+                func member() {
+                }
+            }
+            """)
+        
+        XCTAssertNotNil(
+            file
+            .findRecursive(
+                SyntaxSearchTerm<FunctionDeclSyntax>
+                .any
+                .andParent(SyntaxSearchTerm<MemberDeclListItemSyntax>.any)
+            )
+        )
+        XCTAssertNil(
+            file
+            .findRecursive(
+                SyntaxSearchTerm<FunctionDeclSyntax>
+                .any
+                .andParent(SyntaxSearchTerm<ClassDeclSyntax>.any)
+            )
+        )
+    }
+
+    func testAndAnyAncestor() throws {
+        let file = try Parsing.parse("""
+            class AClass {
+                init() {
+                    var decl: Int = 0
+                }
+                func member() {
+                }
+            }
+            """)
+        
+        XCTAssertNotNil(
+            file
+            .findRecursive(
+                SyntaxSearchTerm<FunctionDeclSyntax>
+                .any
+                .andAnyAncestor(SyntaxSearchTerm<MemberDeclListItemSyntax>.any)
+            )
+        )
+        XCTAssertNotNil(
+            file
+            .findRecursive(
+                SyntaxSearchTerm<FunctionDeclSyntax>
+                .any
+                .andAnyAncestor(SyntaxSearchTerm<ClassDeclSyntax>.any)
+            )
+        )
+        XCTAssertNil(
+            file
+            .findRecursive(
+                SyntaxSearchTerm<FunctionDeclSyntax>
+                .any
+                .andAnyAncestor(SyntaxSearchTerm<StructDeclSyntax>.any)
+            )
+        )
+    }
+
     func testFindRecursive() throws {
         let file = try Parsing.parse("""
             class AClass {

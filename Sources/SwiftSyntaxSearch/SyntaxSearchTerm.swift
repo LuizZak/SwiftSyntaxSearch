@@ -133,6 +133,50 @@ public struct SyntaxSearchTerm<T: SyntaxProtocol> {
 
         return copy
     }
+
+    /// Returns a copy of this search term with a new `and` condition added that
+    /// matches the parent of the syntax object that is matched by this search
+    /// term.
+    public func andParent<U: SyntaxProtocol>(_ matcher: SyntaxSearchTerm<U>) -> Self {
+        var copy = self
+        let condition = WrappedCondition {
+            let node = $0?.castTo(T.self)
+
+            return matcher.matches(node?.parent)
+        }
+        
+        copy._conditions.append(condition)
+
+        return copy
+    }
+
+    /// Returns a copy of this search term with a new `and` condition added that
+    /// matches if any ancestor of the syntax object that is matched by this
+    /// search term matches `matcher`.
+    ///
+    /// Search is done from the node's parent until it hits the root of the syntax
+    /// tree.
+    public func andAnyAncestor<U: SyntaxProtocol>(_ matcher: SyntaxSearchTerm<U>) -> Self {
+        var copy = self
+        let condition = WrappedCondition {
+            let node = $0?.castTo(T.self)
+
+            var parent = node?.parent
+            while let p = parent {
+                if matcher.matches(p) {
+                    return true
+                }
+
+                parent = p.parent
+            }
+
+            return false
+        }
+        
+        copy._conditions.append(condition)
+
+        return copy
+    }
 }
 
 internal struct WrappedCondition {
